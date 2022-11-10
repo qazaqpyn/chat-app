@@ -2,9 +2,12 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
 
 public class EchoClient {
+    HashMap<String, ArrayList<String>> messages = new HashMap<>();
     public void print(String str, Object... o) {
         System.out.printf(str, o);
     }
@@ -30,12 +33,18 @@ public class EchoClient {
 
             print("Input message and press ENTER\n");
             String message = scanner.nextLine();
+            //storing messages in hashmap
+            storeMessage(user, message);
 
             sendString(message, out);
-
-//            String receivedMessage = receiveString(in);
-//            print("Received: " + receivedMessage + "\n");
         }
+    }
+
+    public void storeMessage(String user, String message){
+        if(!messages.containsKey(user)){
+            messages.put(user, new ArrayList<>());
+        }
+        messages.get(user).add(message);
     }
 
     public boolean login(DataOutputStream out, Scanner scanner, DataInputStream in) throws IOException {

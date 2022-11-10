@@ -1,16 +1,21 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 public class EchoServer3 {
 //    ArrayList<Socket> socketList = new ArrayList<Socket>();
+    //users socket hashmap
     HashMap<String, Socket> socketList = new HashMap<>();
     HashMap<Socket, String> socketListReverse = new HashMap<>();
+    //user's hashmap -> DB
     static HashMap<String, String> userDB = new HashMap<>();
+
+    //form userReceiver: [userSender,fileName]
+    HashMap<String, String[]> offlineMessages = new HashMap<>();
 
     public void print(String str, Object... o) {
         System.out.printf(str, o);
@@ -27,12 +32,12 @@ public class EchoServer3 {
                 try {
                     serve(clientSocket);
                 } catch (IOException ex) {
-                    print("Connection drop!");
+                    print("Connection drop ", socketListReverse.get(clientSocket));
                 }
 
                 synchronized (socketList) {
-                    socketList.remove(socketListReverse.get(socketList));
-                    socketListReverse.remove(socketList);
+                    socketList.remove(socketListReverse.get(clientSocket));
+                    socketListReverse.remove(clientSocket);
                 }
             });
             t.start();
@@ -47,25 +52,53 @@ public class EchoServer3 {
         DataInputStream in = new DataInputStream(clientSocket.getInputStream());
         DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
         if(authenticate(in, out, clientSocket)){
+            //check if we store offlineMessages for this user
+            if(offlineMessages.containsKey(socketListReverse.get(clientSocket))){
+                print(socketListReverse.get(clientSocket)+" online; has unread message\n");
+                sendOfflineMessage(clientSocket);
+            }
             while(true){
-                String userReceiver = "";
-                String msg = "";
-                int size = in.readInt();
-                while(size > 0) {
-                    int len = in.read(buffer, 0, Math.min(size, buffer.length));
-                    userReceiver += new String(buffer, 0, len);
-                    size -= len;
+                //read from buffer receiver name and message
+                String userReceiver = readingFromBufferUsernMessage(in, buffer);
+                String msg = readingFromBufferUsernMessage(in, buffer);;
+                //check if user online
+                if(socketList.containsKey(userReceiver)){
+                    //user online -> send messages to receiver
+                    forward(socketListReverse.get(clientSocket), userReceiver);
+                    forward(msg, userReceiver);
+                }else{
+                    //user offline -> store message in file
+                    print(userReceiver+" offline: started writing to file\n");
+                    offlineStoreInFile(msg.length(), buffer, userReceiver, socketListReverse.get(clientSocket));
                 }
-                size = in.readInt();
-                while(size > 0) {
-                    int len = in.read(buffer, 0, Math.min(size, buffer.length));
-                    msg += new String(buffer, 0, len);
-                    size -= len;
-                }
-                forward(socketListReverse.get(clientSocket), userReceiver);
-                forward(msg, userReceiver);
+
+
             }
         }
+    }
+
+    private String readingFromBufferUsernMessage(DataInputStream in, byte[] buffer) throws IOException {
+        int size = in.readInt();
+        String msg = "";
+        while(size > 0) {
+            int len = in.read(buffer, 0, Math.min(size, buffer.length));
+            msg += new String(buffer, 0, len);
+            size -= len;
+        }
+        return msg;
+    }
+
+    private void sendOfflineMessage(Socket clientSocket) throws IOException {
+        String userReceiver = socketListReverse.get(clientSocket);
+        String userSender = offlineMessages.get(userReceiver)[0];
+        String fileName = offlineMessages.get(userReceiver)[1];
+        String text = readFromFile(fileName);
+        //delete file and from hashmap
+        new File(fileName).delete();
+        offlineMessages.remove(userReceiver);
+        //send message to receiver
+        forward(userSender, userReceiver);
+        forward(text, userReceiver);
     }
 
     public boolean authenticate(DataInputStream in, DataOutputStream out, Socket clientSocket) throws IOException {
@@ -108,24 +141,48 @@ public class EchoServer3 {
         return inDB;
     }
 
+    private void offlineStoreInFile(int len, byte[] buffer,String userReceiver, String userSender) throws IOException {
+        String fileName = new SimpleDateFormat("yyyyMMddHHmm'.txt'").format(new Date());
+        File file = new File(userReceiver+fileName);
+        FileOutputStream out = new FileOutputStream(file, false);
+        out.write(buffer, 0, len);
+        out.flush();
+        out.close();
+        //store filename in hashmap
+        String[] insideArray = {userSender, userReceiver+fileName};
+        offlineMessages.put(userReceiver,insideArray);
+    }
+
     private void forward(String msg, String user){
         synchronized (socketList) {
-            if(!socketList.containsKey(user)){
-                //user is not online
-            }else{
-                Socket socket = socketList.get(user);
-                try {
-                    DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                    out.writeInt(msg.length());
-                    out.write(msg.getBytes(), 0, msg.length());
-                } catch (IOException ex) {
-                    print("Unable to forward message to %s:%d\n",
-                            socket.getInetAddress().getHostName(), socket.getPort());
-                }
+            Socket socket = socketList.get(user);
+            try {
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                out.writeInt(msg.length());
+                out.write(msg.getBytes(), 0, msg.length());
+            } catch (IOException ex) {
+                print("Unable to forward message to %s:%d\n",
+                        socket.getInetAddress().getHostName(), socket.getPort());
             }
-
         }
     }
+
+    public String readFromFile(String filename) throws IOException {
+        byte[] buffer = new byte[1024];
+        String str = "";
+        File file = new File(filename);
+        long size = file.length();
+        FileInputStream in = new FileInputStream(file);
+        while (size > 0) {
+            int len = in.read(buffer, 0, buffer.length);
+            size -= len;
+            str += new String(buffer, 0, len);
+        }
+        in.close();
+        return str;
+    }
+
+
 
     public static void main(String[] args) throws IOException {
         userDB.put("ali","12345");
