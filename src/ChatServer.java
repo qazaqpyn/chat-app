@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
-public class EchoServer3 {
+public class ChatServer {
 //    ArrayList<Socket> socketList = new ArrayList<Socket>();
     //users socket hashmap
     HashMap<String, Socket> socketList = new HashMap<>();
@@ -21,7 +21,7 @@ public class EchoServer3 {
         System.out.printf(str, o);
     }
 
-    public EchoServer3(int port) throws IOException {
+    public ChatServer(int port) throws IOException {
         ServerSocket srvSocket = new ServerSocket(port);
 
         while(true) {
@@ -52,6 +52,8 @@ public class EchoServer3 {
         DataInputStream in = new DataInputStream(clientSocket.getInputStream());
         DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
         if(authenticate(in, out, clientSocket)){
+            //send list of users in database
+            sendListOfUsers(getListOfUsers(), out);
             //check if we store offlineMessages for this user
             if(offlineMessages.containsKey(socketListReverse.get(clientSocket))){
                 print(socketListReverse.get(clientSocket)+" online; has unread message\n");
@@ -182,12 +184,27 @@ public class EchoServer3 {
         return str;
     }
 
+    private void sendListOfUsers(String msg, DataOutputStream out) throws IOException {
+        out.writeInt(msg.length());
+        out.write(msg.getBytes(), 0, msg.length());
+    }
+
+    private String getListOfUsers(){
+        String list = "";
+        for ( String key : userDB.keySet() ) {
+            list+=key+",";
+        }
+        StringBuffer sb= new StringBuffer(list);
+        sb.deleteCharAt(sb.length()-1);
+        return sb.toString();
+    }
+
 
 
     public static void main(String[] args) throws IOException {
         userDB.put("ali","12345");
         userDB.put("bula","qwerty");
         int port = Integer.parseInt("12345");
-        new EchoServer3(port);
+        new ChatServer(port);
     }
 }
