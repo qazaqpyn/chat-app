@@ -18,20 +18,26 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.awt.*;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.logging.Logger;
+
+import static java.awt.SystemColor.desktop;
 
 public class ChatClient extends Application {
     String chatUserReceiver = "";
@@ -64,6 +70,7 @@ public class ChatClient extends Application {
     @FXML private Button btnLogin;
 
     public String username, password;
+    private Desktop desktop = Desktop.getDesktop();
 
     public ChatClient() throws IOException {
     }
@@ -79,6 +86,9 @@ public class ChatClient extends Application {
         primaryStage.setMinWidth(300);
         primaryStage.setMinHeight(500);
         primaryStage.show();
+        btnEmoji.setOnMouseClicked(event -> {
+            openFiles(primaryStage);
+        });
     }
 
     @FXML
@@ -94,10 +104,6 @@ public class ChatClient extends Application {
         txtInput.setOnKeyPressed(event -> {
             if (event.getCode().toString().equals("ENTER"))
                 sendMessage();
-        });
-
-        btnEmoji.setOnMouseClicked(event -> {
-            displayEmoji();
         });
         btnLogin.setOnMouseClicked(event->{
             username = txtUsername.getText();
@@ -235,12 +241,39 @@ public class ChatClient extends Application {
         });
     }
 
-    private void displayEmoji() {
+    private void openFiles(Stage stage) {
         Platform.runLater(() -> {
-            childrenMessage.add(imageNode("emoji.png", msgIndex == 0));
-            msgIndex = (msgIndex + 1) % 2;
+            final FileChooser fileChooser = new FileChooser();
+            File file = fileChooser.showOpenDialog(stage);
+            if (file != null) {
+                try {
+                    readFile(file);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         });
     }
+    private void readFile(File file) throws IOException {
+        System.out.println("name : " + file.getName());
+        System.out.println("size (bytes) : " + file.length());
+        System.out.println("absolute path? : " + file.isAbsolute());
+        System.out.println("exists? : " + file.exists());
+        System.out.println("hidden? : " + file.isHidden());
+        System.out.println("dir? : " + file.isDirectory());
+        System.out.println("file? : " + file.isFile());
+        System.out.println("modified (timestamp) : " + file.lastModified());
+        System.out.println("readable? : " + file.canRead());
+        System.out.println("writable? : " + file.canWrite());
+        System.out.println("executable? : " + file.canExecute());
+        System.out.println("parent : " + file.getParent());
+        System.out.println("absolute file : " + file.getAbsoluteFile());
+        System.out.println("absolute path : " + file.getAbsolutePath());
+        System.out.println("canonical file : " + file.getCanonicalFile());
+        System.out.println("canonical path : " + file.getCanonicalPath());
+
+    }
+
 
     public static void print(String str, Object... o) {
         System.out.printf(str, o);
