@@ -21,11 +21,11 @@
             <VBox fx:id="login" >
                <children>
                   <GridPane alignment="CENTER" hgap="10.0" vgap="10.0">
-                     <Label text="Username"/>
-                     <TextField fx:id="txtUsername" GridPane.columnIndex="1" />
-                     <Label text="Password" GridPane.halignment="RIGHT" GridPane.rowIndex="1" />
-                     <PasswordField fx:id="txtPassword" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                     <Button fx:id="btnLogin" mnemonicParsing="false" text="Log In" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                     <Label text="Username" GridPane.rowIndex="10"/>
+                     <TextField fx:id="txtUsername" GridPane.columnIndex="1" GridPane.rowIndex="10"/>
+                     <Label text="Password" GridPane.halignment="RIGHT" GridPane.rowIndex="11" />
+                     <PasswordField fx:id="txtPassword" GridPane.columnIndex="1" GridPane.rowIndex="11" />
+                     <Button fx:id="btnLogin" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" text="Log In" GridPane.columnIndex="1" GridPane.rowIndex="12"/>
                   </GridPane>
                </children>
             </VBox>
