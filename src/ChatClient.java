@@ -127,7 +127,7 @@ public class ChatClient extends Application {
                                         childrenMessage.add(mesNode);
                                     }
                                     //storeMessage
-                                    storeMessage(chatUserReceiver, mesNode);
+                                    storeMessage(receivedUser, mesNode);
                                 });
 
                             }
