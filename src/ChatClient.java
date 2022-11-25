@@ -118,17 +118,31 @@ public class ChatClient extends Application {
                         try {
                             while(true) {
                                 String receivedUser = this.receiveString(in);
+                                String receivedType = this.receiveString(in);
                                 String receivedMessage = this.receiveString(in);
                                 this.print(receivedUser + ": " + receivedMessage + "\n");
-                                Platform.runLater(() -> {
-                                    Node mesNode = messageNode(receivedMessage, false);
-                                    //check if opened chatroom is with received user's message if yes add it to chatroom children
-                                    if(receivedUser.equals(chatUserReceiver)){
-                                        childrenMessage.add(mesNode);
-                                    }
-                                    //storeMessage
-                                    storeMessage(receivedUser, mesNode);
-                                });
+                                if(receivedType.contains("text")){
+                                    Platform.runLater(() -> {
+                                        Node mesNode = messageNode(receivedMessage, false);
+                                        //check if opened chatroom is with received user's message if yes add it to chatroom children
+                                        if(receivedUser.equals(chatUserReceiver)){
+                                            childrenMessage.add(mesNode);
+                                        }
+                                        //storeMessage
+                                        storeMessage(receivedUser, mesNode);
+                                    });
+                                }else{
+                                    //file type
+                                    Platform.runLater(() -> {
+                                        Node mesNode = messageNode(receivedMessage, false);
+                                        //check if opened chatroom is with received user's message if yes add it to chatroom children
+                                        if(receivedUser.equals(chatUserReceiver)){
+                                            childrenMessage.add(mesNode);
+                                        }
+                                        //storeMessage
+                                        storeMessage(receivedUser, mesNode);
+                                    });
+                                }
 
                             }
                         } catch (IOException ex) {

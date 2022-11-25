@@ -16,6 +16,7 @@ public class ChatServer {
 
     //form userReceiver: [userSender,fileName]
     HashMap<String, String[]> offlineMessages = new HashMap<>();
+    HashMap<String, String[]> offlineFiles = new HashMap<>();
 
     public void print(String str, Object... o) {
         System.out.printf(str, o);
@@ -66,12 +67,22 @@ public class ChatServer {
                 //type message handle case
                 if(type.equals("file")){
                     writeFile(userReceiver, in, buffer);
+                    if(socketList.containsKey(userReceiver)){
+                        //user online -> send messages to receiver
+                        forward(socketListReverse.get(clientSocket), userReceiver);
+                        forward("file", userReceiver);
+                    }else{
+                        //user offline -> store message in file
+//                        print(userReceiver+" offline: started writing to file\n");
+//                        offlineStoreInFile(msg.length(), buffer, userReceiver, socketListReverse.get(clientSocket));
+                    }
                 }else if(type.equals("text")){
                     String msg = readingFromBufferUsernMessage(in, buffer);
                     //check if user online
                     if(socketList.containsKey(userReceiver)){
                         //user online -> send messages to receiver
                         forward(socketListReverse.get(clientSocket), userReceiver);
+                        forward("text", userReceiver);
                         forward(msg, userReceiver);
                     }else{
                         //user offline -> store message in file
@@ -127,6 +138,7 @@ public class ChatServer {
         offlineMessages.remove(userReceiver);
         //send message to receiver
         forward(userSender, userReceiver);
+        forward("text", userReceiver);
         forward(text, userReceiver);
     }
 
