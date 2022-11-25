@@ -233,6 +233,7 @@ public class ChatClient extends Application {
             //storeMessage
             storeMessage(chatUserReceiver, mesNode);
             try {
+                sendString("text", out);
                 sendString(chatUserReceiver, out);
                 sendString(text, out);
             } catch (IOException e) {
@@ -272,6 +273,23 @@ public class ChatClient extends Application {
         System.out.println("canonical file : " + file.getCanonicalFile());
         System.out.println("canonical path : " + file.getCanonicalPath());
 
+        byte[] buffer = new byte[1024];
+        long size = file.length();
+        FileInputStream in = new FileInputStream(file);
+
+        //send type of message
+        sendString("file",out);
+        sendString(chatUserReceiver, out);
+        sendString(file.getName(), out);
+        while (size > 0) {
+            int len = in.read(buffer, 0, buffer.length);
+            String s = new String(buffer, 0, len);
+            size -= len;
+            System.out.println(s);
+            sendString(s, out);
+        }
+        sendString("@@quit", out);
+        in.close();
     }
 
 
@@ -287,6 +305,11 @@ public class ChatClient extends Application {
         int len = string.length();
         out.writeInt(len);
         out.write(string.getBytes(), 0, len);
+        out.flush();
+    }
+
+    public static void sendFileText(long size, DataOutputStream out) throws IOException {
+        out.writeLong(size);
         out.flush();
     }
 

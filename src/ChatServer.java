@@ -61,22 +61,49 @@ public class ChatServer {
             }
             while(true){
                 //read from buffer receiver name and message
+                String type = readingFromBufferUsernMessage(in, buffer);
                 String userReceiver = readingFromBufferUsernMessage(in, buffer);
-                String msg = readingFromBufferUsernMessage(in, buffer);;
-                //check if user online
-                if(socketList.containsKey(userReceiver)){
-                    //user online -> send messages to receiver
-                    forward(socketListReverse.get(clientSocket), userReceiver);
-                    forward(msg, userReceiver);
-                }else{
-                    //user offline -> store message in file
-                    print(userReceiver+" offline: started writing to file\n");
-                    offlineStoreInFile(msg.length(), buffer, userReceiver, socketListReverse.get(clientSocket));
+                //type message handle case
+                if(type.equals("file")){
+                    writeFile(userReceiver, in, buffer);
+                }else if(type.equals("text")){
+                    String msg = readingFromBufferUsernMessage(in, buffer);
+                    //check if user online
+                    if(socketList.containsKey(userReceiver)){
+                        //user online -> send messages to receiver
+                        forward(socketListReverse.get(clientSocket), userReceiver);
+                        forward(msg, userReceiver);
+                    }else{
+                        //user offline -> store message in file
+                        print(userReceiver+" offline: started writing to file\n");
+                        offlineStoreInFile(msg.length(), buffer, userReceiver, socketListReverse.get(clientSocket));
+                    }
                 }
-
-
             }
         }
+    }
+
+    private void writeFile(String userReceiver, DataInputStream in, byte[] buffer) throws IOException {
+        String fileName = readingFromBufferUsernMessage(in, buffer);
+        File file = new File(fileName);
+        FileOutputStream wout = new FileOutputStream(file, false);
+        while(true) {
+            int i = in.readInt();
+            while(i > 0) {
+                int len = in.read(buffer, 0, Math.min(i, buffer.length));
+                String s = new String(buffer, 0, len);
+                if (s.contains("@@quit")) {
+                    System.out.println("END OF FILE, "+ s);
+                    wout.flush();
+                    wout.close();
+                    break;
+                }
+                wout.write(buffer, 0, len);
+                i -= len;
+                System.out.println(1);
+            }
+        }
+
     }
 
     private String readingFromBufferUsernMessage(DataInputStream in, byte[] buffer) throws IOException {
