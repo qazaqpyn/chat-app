@@ -69,16 +69,13 @@ public class ChatServer {
                 String userReceiver = readingFromBufferUsernMessage(in, buffer);
                 //type message handle case
                 if(type.equals("file")){
-                    writeFile(userReceiver, in, buffer);
-//                    if(socketList.containsKey(userReceiver)){
-//                        //user online -> send messages to receiver
-//                        forward(socketListReverse.get(clientSocket), userReceiver);
-//                        forward("file", userReceiver);
-//                    }else{
-//                        //user offline -> store message in file
-////                        print(userReceiver+" offline: started writing to file\n");
-////                        offlineStoreInFile(msg.length(), buffer, userReceiver, socketListReverse.get(clientSocket));
-//                    }
+                    String filename = writeFile(userReceiver, in, buffer);
+                    if(socketList.containsKey(userReceiver)){
+                        //user online -> send messages to receiver
+                        forward("file", userReceiver);
+                        forward(socketListReverse.get(clientSocket), userReceiver);
+                        forward(filename, userReceiver);
+                    }
                 }else if(type.equals("text")){
                     String msg = readingFromBufferUsernMessage(in, buffer);
                     //check if user online
@@ -122,7 +119,7 @@ public class ChatServer {
         print("Complete!\n");
     }
 
-    private void writeFile(String userReceiver, DataInputStream in, byte[] buffer) throws IOException {
+    private String writeFile(String userReceiver, DataInputStream in, byte[] buffer) throws IOException {
         int remain = in.readInt();
         String filename = "";
         while(remain > 0) {
@@ -147,6 +144,7 @@ public class ChatServer {
         print("Completed!\n");
         fout.flush();
         fout.close();
+        return filename;
     }
 
     private String readingFromBufferUsernMessage(DataInputStream in, byte[] buffer) throws IOException {
