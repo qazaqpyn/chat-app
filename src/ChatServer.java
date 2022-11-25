@@ -1,3 +1,6 @@
+import javafx.application.Platform;
+import javafx.scene.Node;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -18,7 +21,7 @@ public class ChatServer {
     HashMap<String, String[]> offlineMessages = new HashMap<>();
     HashMap<String, String[]> offlineFiles = new HashMap<>();
 
-    public void print(String str, Object... o) {
+    public static void print(String str, Object... o) {
         System.out.printf(str, o);
     }
 
@@ -67,54 +70,83 @@ public class ChatServer {
                 //type message handle case
                 if(type.equals("file")){
                     writeFile(userReceiver, in, buffer);
-                    if(socketList.containsKey(userReceiver)){
-                        //user online -> send messages to receiver
-                        forward(socketListReverse.get(clientSocket), userReceiver);
-                        forward("file", userReceiver);
-                    }else{
-                        //user offline -> store message in file
-//                        print(userReceiver+" offline: started writing to file\n");
-//                        offlineStoreInFile(msg.length(), buffer, userReceiver, socketListReverse.get(clientSocket));
-                    }
+//                    if(socketList.containsKey(userReceiver)){
+//                        //user online -> send messages to receiver
+//                        forward(socketListReverse.get(clientSocket), userReceiver);
+//                        forward("file", userReceiver);
+//                    }else{
+//                        //user offline -> store message in file
+////                        print(userReceiver+" offline: started writing to file\n");
+////                        offlineStoreInFile(msg.length(), buffer, userReceiver, socketListReverse.get(clientSocket));
+//                    }
                 }else if(type.equals("text")){
                     String msg = readingFromBufferUsernMessage(in, buffer);
                     //check if user online
                     if(socketList.containsKey(userReceiver)){
                         //user online -> send messages to receiver
-                        forward(socketListReverse.get(clientSocket), userReceiver);
                         forward("text", userReceiver);
+                        forward(socketListReverse.get(clientSocket), userReceiver);
                         forward(msg, userReceiver);
                     }else{
                         //user offline -> store message in file
                         print(userReceiver+" offline: started writing to file\n");
                         offlineStoreInFile(msg.length(), buffer, userReceiver, socketListReverse.get(clientSocket));
                     }
+                }else{
+                    readFile(userReceiver, out);
                 }
             }
         }
     }
 
+    private void readFile(String filename, DataOutputStream out) throws IOException {
+        File file = new File(filename);
+        if (!file.exists() && file.isDirectory())
+            throw new IOException("Invalid path!");
+
+        FileInputStream in = new FileInputStream(file);
+
+        long size = file.length();
+        out.writeLong(size);
+
+        print("Uploading %s (%d bytes)", file.getName(), size);
+
+        byte[] buffer = new byte[1024];
+        while(size >0) {
+            int len = in.read(buffer, 0, (int) Math.min(size, buffer.length));
+            out.write(buffer, 0, len);
+            size -= len;
+            print(".");
+        }
+        out.flush();
+        print("Complete!\n");
+    }
+
     private void writeFile(String userReceiver, DataInputStream in, byte[] buffer) throws IOException {
-        String fileName = readingFromBufferUsernMessage(in, buffer);
-        File file = new File(fileName);
-        FileOutputStream wout = new FileOutputStream(file, false);
-        while(true) {
-            int i = in.readInt();
-            while(i > 0) {
-                int len = in.read(buffer, 0, Math.min(i, buffer.length));
-                String s = new String(buffer, 0, len);
-                if (s.contains("@@quit")) {
-                    System.out.println("END OF FILE, "+ s);
-                    wout.flush();
-                    wout.close();
-                    break;
-                }
-                wout.write(buffer, 0, len);
-                i -= len;
-                System.out.println(1);
-            }
+        int remain = in.readInt();
+        String filename = "";
+        while(remain > 0) {
+            int len = in.read(buffer, 0, Math.min(remain, buffer.length));
+            filename += new String(buffer, 0, len);
+            remain -= len;
         }
 
+        File file = new File(filename);
+        FileOutputStream fout = new FileOutputStream(file);
+
+        long size = in.readLong();
+
+        print("Downloading ..."+ filename +" "+ size);
+
+        while(size > 0) {
+            int len = in.read(buffer, 0, (int) Math.min(size, buffer.length));
+            fout.write(buffer, 0, len);
+            size -= len;
+            print(".");
+        }
+        print("Completed!\n");
+        fout.flush();
+        fout.close();
     }
 
     private String readingFromBufferUsernMessage(DataInputStream in, byte[] buffer) throws IOException {
@@ -137,8 +169,8 @@ public class ChatServer {
         new File(fileName).delete();
         offlineMessages.remove(userReceiver);
         //send message to receiver
-        forward(userSender, userReceiver);
         forward("text", userReceiver);
+        forward(userSender, userReceiver);
         forward(text, userReceiver);
     }
 

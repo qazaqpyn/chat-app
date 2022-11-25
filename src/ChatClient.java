@@ -117,8 +117,8 @@ public class ChatClient extends Application {
                     Thread t = new Thread(()-> {
                         try {
                             while(true) {
-                                String receivedUser = this.receiveString(in);
                                 String receivedType = this.receiveString(in);
+                                String receivedUser = this.receiveString(in);
                                 String receivedMessage = this.receiveString(in);
                                 this.print(receivedUser + ": " + receivedMessage + "\n");
                                 if(receivedType.contains("text")){
@@ -134,13 +134,13 @@ public class ChatClient extends Application {
                                 }else{
                                     //file type
                                     Platform.runLater(() -> {
-                                        Node mesNode = messageNode(receivedMessage, false);
+                                        Node imgNode = imageNode("emoji.png", false, receivedMessage);
                                         //check if opened chatroom is with received user's message if yes add it to chatroom children
                                         if(receivedUser.equals(chatUserReceiver)){
-                                            childrenMessage.add(mesNode);
+                                            childrenMessage.add(imgNode);
                                         }
                                         //storeMessage
-                                        storeMessage(receivedUser, mesNode);
+                                        storeMessage(receivedUser, imgNode);
                                     });
                                 }
 
@@ -219,7 +219,7 @@ public class ChatClient extends Application {
         return box;
     }
 
-    private Node imageNode(String imagePath, boolean alignToRight) {
+    private Node imageNode(String imagePath, boolean alignToRight, String fileName) {
         try {
             HBox box = new HBox();
             box.paddingProperty().setValue(new Insets(10, 10, 10, 10));
@@ -230,7 +230,15 @@ public class ChatClient extends Application {
             ImageView imageView = new ImageView(new Image(in));
             imageView.setFitWidth(50);
             imageView.setPreserveRatio(true);
+            box.setUserData(fileName);
             box.getChildren().add(imageView);
+            imageView.setOnMouseClicked(event -> {
+                try {
+                    downloadFile((String) box.getUserData());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
             return box;
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -269,41 +277,57 @@ public class ChatClient extends Application {
             }
         });
     }
-    private void readFile(File file) throws IOException {
-        System.out.println("name : " + file.getName());
-        System.out.println("size (bytes) : " + file.length());
-        System.out.println("absolute path? : " + file.isAbsolute());
-        System.out.println("exists? : " + file.exists());
-        System.out.println("hidden? : " + file.isHidden());
-        System.out.println("dir? : " + file.isDirectory());
-        System.out.println("file? : " + file.isFile());
-        System.out.println("modified (timestamp) : " + file.lastModified());
-        System.out.println("readable? : " + file.canRead());
-        System.out.println("writable? : " + file.canWrite());
-        System.out.println("executable? : " + file.canExecute());
-        System.out.println("parent : " + file.getParent());
-        System.out.println("absolute file : " + file.getAbsoluteFile());
-        System.out.println("absolute path : " + file.getAbsolutePath());
-        System.out.println("canonical file : " + file.getCanonicalFile());
-        System.out.println("canonical path : " + file.getCanonicalPath());
+    private void downloadFile(String filename) throws IOException{
+        sendString("downloadFile", out);
+        sendString(filename, out);
 
+
+        File file = new File(filename);
+        FileOutputStream fout = new FileOutputStream(file);
+
+        long size = in.readLong();
+
+        print("Downloading ..."+ filename +" "+ size);
         byte[] buffer = new byte[1024];
-        long size = file.length();
-        FileInputStream in = new FileInputStream(file);
-
-        //send type of message
+        while(size > 0) {
+            int len = in.read(buffer, 0, (int) Math.min(size, buffer.length));
+            fout.write(buffer, 0, len);
+            size -= len;
+            print(".");
+        }
+        print("Completed!\n");
+        fout.flush();
+        fout.close();
+    }
+    private void readFile(File file) throws IOException {
+//        //send type of message
         sendString("file",out);
         sendString(chatUserReceiver, out);
-        sendString(file.getName(), out);
-        while (size > 0) {
-            int len = in.read(buffer, 0, buffer.length);
-            String s = new String(buffer, 0, len);
+        FileInputStream in = new FileInputStream(file);
+
+        byte[] filename = file.getName().getBytes();
+        out.writeInt(filename.length);
+        out.write(filename, 0, filename.length);
+
+        long size = file.length();
+        out.writeLong(size);
+
+        print("Uploading %s (%d bytes)", file.getName(), size);
+
+        byte[] buffer = new byte[1024];
+        while(size >0) {
+            int len = in.read(buffer, 0, (int) Math.min(size, buffer.length));
+            out.write(buffer, 0, len);
             size -= len;
-            System.out.println(s);
-            sendString(s, out);
+            print(".");
         }
-        sendString("@@quit", out);
-        in.close();
+        out.flush();
+        print("Complete!\n");
+        Node imgNode = imageNode("emoji.png", true, file.getName());
+        //check if opened chatroom is with received user's message if yes add it to chatroom children
+        childrenMessage.add(imgNode);
+        //storeMessage
+        storeMessage(chatUserReceiver, imgNode);
     }
 
 
