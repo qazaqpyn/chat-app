@@ -1,0 +1,47 @@
+.dark-background {
+    -fx-background-color: #46474A;
+}
+
+.light-background{
+    -fx-background-color: #a2c2ec;
+}
+
+.skyblue-background {
+    -fx-background-color: #02d9fa;
+}
+
+.transparent-background{
+    -fx-background-color: rgba(0,0,0,0);
+}
+
+.msg-background{
+    -fx-background-color: #22333b;
+}
+
+.profile-background{
+    -fx-background-color: #3a2671;
+}
+
+.radius{
+    -fx-background-radius: 100px;
+}
+
+.top-border {
+    -fx-border-color: #46474A transparent transparent transparent;
+}
+
+.bottom-border{
+    -fx-border-color: transparent transparent #46474A transparent;
+}
+
+.left-border{
+    -fx-border-color: transparent transparent transparent #46474A;
+}
+
+.right-border{
+    -fx-border-color: transparent #46474A transparent transparent;
+}
+
+.text-color{
+
+}

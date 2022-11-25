@@ -35,9 +35,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
-import java.util.logging.Logger;
-
-import static java.awt.SystemColor.desktop;
 
 public class ChatClient extends Application {
     String chatUserReceiver = "";
@@ -78,7 +75,7 @@ public class ChatClient extends Application {
 
     @Override
     public void start(Stage primaryStage) throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("./ChatUI2.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("ChatUI2.fxml"));
         loader.setController(this);
         Parent root = loader.load();
         primaryStage.setScene(new Scene(root));
